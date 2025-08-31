@@ -1,5 +1,8 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, get_object_or_404, redirect
 from django.db import connection
+from .forms import PostForm
+from .models import Post
+
 
 
 def home(request):
@@ -32,37 +35,26 @@ def post_detail(request, post_id):
 
 def post_create(request):
     if request.method == "POST":
-        title = request.POST.get("title")
-        content = request.POST.get("content")
+        form = PostForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('post_list')
+    else:
+        form = PostForm()
 
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO blog_post (title, content, created_at) VALUES (%s, %s, NOW())",
-                [title, content]
-            )
-
-        return redirect('post_list')
-
-    return render(request, 'blog/post_create.html')
+    return render(request, 'blog/post_form.html', {'form': form})
 
 def post_update(request, post_id):
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT id, title, content FROM blog_post WHERE id = %s", [post_id])
-        post = cursor.fetchone()
-
+    post = get_object_or_404(Post, pk=post_id)  # cari post berdasarkan id/primary key
     if request.method == "POST":
-        title = request.POST.get("title")
-        content = request.POST.get("content")
+        form = PostForm(request.POST, instance=post)  # pake instance biar edit bukan bikin baru
+        if form.is_valid():
+            form.save()
+            return redirect('post_list')  # balik ke daftar post setelah update
+    else:
+        form = PostForm(instance=post)  # tampilkan data lama di form
 
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "UPDATE blog_post SET title = %s, content = %s WHERE id = %s",
-                [title, content, post_id]
-            )
-
-        return redirect('post_list')
-
-    return render(request, 'blog/post_update.html', {'post': post})
+    return render(request, 'blog/post_update.html', {'form': form})
 
 
 def post_delete(request, post_id):
