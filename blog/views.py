@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db import connection
+from django.contrib import messages
 from .forms import PostForm
 from .models import Post
 
@@ -34,14 +35,14 @@ def post_detail(request, post_id):
     return render(request, 'blog/post_detail.html', {'post': post})
 
 def post_create(request):
-    if request.method == "POST":
+    if request.method == 'POST':
         form = PostForm(request.POST)
         if form.is_valid():
             form.save()
+            messages.success(request, "Postingan berhasil dibuat")
             return redirect('post_list')
     else:
         form = PostForm()
-
     return render(request, 'blog/post_form.html', {'form': form})
 
 def post_update(request, post_id):
@@ -50,6 +51,7 @@ def post_update(request, post_id):
         form = PostForm(request.POST, instance=post)  # pake instance biar edit bukan bikin baru
         if form.is_valid():
             form.save()
+            messages.success(request, "Postingan berhasil diupdate")
             return redirect('post_list')  # balik ke daftar post setelah update
     else:
         form = PostForm(instance=post)  # tampilkan data lama di form
@@ -60,4 +62,5 @@ def post_update(request, post_id):
 def post_delete(request, post_id):
     with connection.cursor() as cursor:
         cursor.execute("DELETE FROM blog_post WHERE id = %s", [post_id])
+        messages.error(request, "Postingan berhasil dihapus")
     return redirect('post_list')
